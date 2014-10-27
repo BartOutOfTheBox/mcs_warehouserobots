@@ -1,0 +1,79 @@
+/** 
+* Skeleton for the first part of the project. 
+*
+* No names in this skeleton can be changed, you can add things to the vocabulary and you should definitely add stuff to the theory. 
+*/
+
+vocabulary warehouseVoc{
+	type pallet
+	
+	on(pallet,pallet) //on(p1,p2) means p1 is standing on p2
+	carried(pallet) //carried(p1) means p1 is carried by the robot
+
+	type xco isa nat
+	type yco isa nat	
+	type location constructed from {grid(xco,yco)}
+	
+	inaccessible(location) //Locations that cannot be accessed by the robot and cannot be occupied by pallets
+	robotposition: location //position of the robot
+	position(pallet): location //position of the pallets
+	
+	type dir constructed from {north, east, south, west}
+	facing: dir //direction in which the robot is facing
+	
+	type height isa nat 
+	ceiling: height //the height of the ceiling
+    
+    //above(p1,p2) means p1 is located above p2 
+    //(eg. if on(p1,p3) & on(p3,p2) then above(p1,p3) & above (p3,p2) & above (p1,p2))
+    above(pallet,pallet)
+    
+    //eacht pallet is located on a certain height.
+    //the top of the pallet counts as the point of height.
+    //a pallet standing on the floor has thus height 1.
+    heightOf(pallet): height
+
+}
+
+theory solution: warehouseVoc{
+    //inaccessible positions are inaccessible for robots
+    ! l [location]: inaccessible(l) => (robotposition~=l).
+    
+    //inaccessible positions are inaccessible for palets
+    ! l [location], p [pallet]: inaccessible(l) => (position(p)~=l).
+    
+    //The robot faces a certain direction
+    
+    //The robot can carry no more than one pallet at a time.
+    //if both pallet1 and pallet2 are carried by the robot, pallet1 and pallet2 are the same pallet.
+    ! p1 [pallet], p2 [pallet]: (carried(p1) & carried(p2)) => p1 = p2.
+    
+    //The robot cannot stand on a stack of pallets, hence, pallets only have the same position as the robot when they are being carried by the robot.
+    ! p [pallet]: (position(p) = robotposition) <=> carried(p).
+    
+    //a pallet is either standing on the floor, on another pallet or it is carried by the robot (the robot carries pallets above his head).
+    
+    
+    //Pallets have a position, which does not change unless the robot moves them.
+    
+    //Pallets cannot fly
+    
+    //It cannot be the case that pallet p1 is positioned on pallet p2 and at the same time pallet p2 rests on pallet p1
+    {
+     	! p1 [pallet], p2 [pallet]: above(p1,p2) <- on(p1,p2).
+        ! p1 [pallet], p2 [pallet], p3 [pallet]: 
+        	above(p1,p3) <- above(p1,p2) & above (p2,p3).
+    }
+    
+    ! p1 [pallet], p2 [pallet]: above(p1,p2) => (~above(p2,p1)).
+    
+    //at most one other pallet resting on every other pallet.
+    //hence if two pallets are resting on the same pallet, the former two are actually the same pallet.
+    ! p1 [pallet], p2 [pallet], p [pallet]: (on(p1,p) & on(p2,p)) => (p1 = p2).
+    
+    //height pallet shit hierzo
+    
+    //stacks of pallets are limited in height by the ceiling of the warehouse
+    
+    
+}
