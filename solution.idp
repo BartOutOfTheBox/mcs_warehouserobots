@@ -4,7 +4,7 @@
 * No names in this skeleton can be changed, you can add things to the vocabulary and you should definitely add stuff to the theory. 
 */
 
-vocabulary warehouseVoc{
+vocabulary warehousevoc{
 	type pallet
 	
 	on(pallet,pallet) //on(p1,p2) means p1 is standing on p2
@@ -35,14 +35,12 @@ vocabulary warehouseVoc{
 
 }
 
-theory solution: warehouseVoc{
+theory solution: warehousevoc{
     //inaccessible positions are inaccessible for robots
     ! l [location]: inaccessible(l) => (robotposition~=l).
     
     //inaccessible positions are inaccessible for palets
     ! l [location], p [pallet]: inaccessible(l) => (position(p)~=l).
-    
-    //The robot faces a certain direction
     
     //The robot can carry no more than one pallet at a time.
     //if both pallet1 and pallet2 are carried by the robot, pallet1 and pallet2 are the same pallet.
@@ -51,20 +49,14 @@ theory solution: warehouseVoc{
     //The robot cannot stand on a stack of pallets, hence, pallets only have the same position as the robot when they are being carried by the robot.
     ! p [pallet]: (position(p) = robotposition) <=> carried(p).
     
-    //a pallet is either standing on the floor, on another pallet or it is carried by the robot (the robot carries pallets above his head).
-    
-    
-    //Pallets have a position, which does not change unless the robot moves them.
-    
-    //Pallets cannot fly
-    
-    //It cannot be the case that pallet p1 is positioned on pallet p2 and at the same time pallet p2 rests on pallet p1
+    //Helper for the next expression. a pallet p1 is above another pallet p2 if above(p1,p2). There may or may not be other pallets in between.
     {
      	! p1 [pallet], p2 [pallet]: above(p1,p2) <- on(p1,p2).
         ! p1 [pallet], p2 [pallet], p3 [pallet]: 
         	above(p1,p3) <- above(p1,p2) & above (p2,p3).
     }
     
+    //It cannot be the case that pallet p1 is positioned on pallet p2 and at the same time pallet p2 rests on pallet p1
     ! p1 [pallet], p2 [pallet]: above(p1,p2) => (~above(p2,p1)).
     
     //at most one other pallet resting on every other pallet.
@@ -72,8 +64,10 @@ theory solution: warehouseVoc{
     ! p1 [pallet], p2 [pallet], p [pallet]: (on(p1,p) & on(p2,p)) => (p1 = p2).
     
     //height pallet shit hierzo
+    ! p [pallet]: heightOf(p) = 
+    	#{p2 [pallet]: (position(p)=position(p2)) &  (~above(p2,p))} + 1.
     
     //stacks of pallets are limited in height by the ceiling of the warehouse
-    
+    ! p [pallet]: heightOf(p) < (ceiling + 1).
     
 }
