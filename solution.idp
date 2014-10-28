@@ -24,7 +24,7 @@ vocabulary warehousevoc{
 	type height isa nat 
 	ceiling: height //the height of the ceiling
     	
-    	// above(p1,p2) means p1 is located above p2. 
+	// above(p1,p2) means p1 is located above p2. 
 	// (eg. if on(p1,p3) & on(p3,p2) then above(p1,p3) & above (p3,p2) & above (p1,p2))
 	above(pallet,pallet)
     
@@ -70,6 +70,5 @@ theory solution: warehousevoc{
 		#{p2 [pallet]: (position(p1) = position(p2)) & (~above(p2, p1))} + 1.
     
 	// Stacks of pallets are limited in height by the ceiling of the warehouse.
-	! p [pallet]: heightOf(p) < (ceiling + 1).
-    
+	! p [pallet]: heightOf(p) =< ceiling.
 }
