@@ -1,8 +1,8 @@
-include "solution.idp" //put your solution here
+include "mcs_warehouserobots/solution.idp" //put your solution here
 include <mx>
 
-procedure main() {
-    check();
+procedure main(){
+	check();
 }
 
 procedure check(){

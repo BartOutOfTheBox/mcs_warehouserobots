@@ -30,7 +30,7 @@ vocabulary warehousevoc{
     
     //eacht pallet is located on a certain height.
     //the top of the pallet counts as the point of height.
-    //a pallet standing on the floor has thus height 1.
+    //a pallet standing on the floor thus has height 1.
     heightOf(pallet): height
 
 }
@@ -47,7 +47,7 @@ theory solution: warehousevoc{
     ! p1 [pallet], p2 [pallet]: (carried(p1) & carried(p2)) => p1 = p2.
     
     //The robot cannot stand on a stack of pallets, hence, pallets only have the same position as the robot when they are being carried by the robot.
-    ! p [pallet]: (position(p) = robotposition) <=> carried(p).
+    ! p [pallet]:  carried(p) <=> (position(p) = robotposition).
     
     //Helper for the next expression. a pallet p1 is above another pallet p2 if above(p1,p2). There may or may not be other pallets in between.
     {
@@ -61,11 +61,11 @@ theory solution: warehousevoc{
     
     //at most one other pallet resting on every other pallet.
     //hence if two pallets are resting on the same pallet, the former two are actually the same pallet.
-    ! p1 [pallet], p2 [pallet], p [pallet]: (on(p1,p) & on(p2,p)) => (p1 = p2).
+    ! p1 [pallet], p2 [pallet], p3 [pallet]: (on(p1,p3) & on(p2,p3)) => (p1 = p2).
     
-    //height pallet shit hierzo
-    ! p [pallet]: heightOf(p) = 
-    	#{p2 [pallet]: (position(p)=position(p2)) &  (~above(p2,p))} + 1.
+    //height pallet
+    ! p1 [pallet]: heightOf(p1) = 
+    	#{p2 [pallet]: (position(p1)=position(p2)) &  (~above(p2,p1))} + 1.
     
     //stacks of pallets are limited in height by the ceiling of the warehouse
     ! p [pallet]: heightOf(p) < (ceiling + 1).
