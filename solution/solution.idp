@@ -23,51 +23,52 @@ vocabulary warehousevoc{
 	
 	type height isa nat 
 	ceiling: height //the height of the ceiling
+    	
+	// above(p1,p2) means p1 is located above p2. 
+	// (eg. if on(p1,p3) & on(p3,p2) then above(p1,p3) & above (p3,p2) & above (p1,p2))
+	above(pallet,pallet)
     
-    //above(p1,p2) means p1 is located above p2 
-    //(eg. if on(p1,p3) & on(p3,p2) then above(p1,p3) & above (p3,p2) & above (p1,p2))
-    above(pallet,pallet)
-    
-    //eacht pallet is located on a certain height.
-    //the top of the pallet counts as the point of height.
-    //a pallet standing on the floor has thus height 1.
-    heightOf(pallet): height
-
+	// Each pallet is located on a certain height.
+	// The top of the pallet counts as the point of height.
+	// A pallet standing on the floor thus has height 1.
+	heightOf(pallet): height
 }
 
 theory solution: warehousevoc{
-    //inaccessible positions are inaccessible for robots
-    ! l [location]: inaccessible(l) => (robotposition~=l).
+	// Inaccessible positions are inaccessible for robots.
+	! l [location]: inaccessible(l) => (robotposition ~= l).
     
-    //inaccessible positions are inaccessible for palets
-    ! l [location], p [pallet]: inaccessible(l) => (position(p)~=l).
+	// Inaccessible positions are inaccessible for pallets.
+	! l [location], p [pallet]: inaccessible(l) => (position(p) ~= l).
     
-    //The robot can carry no more than one pallet at a time.
-    //if both pallet1 and pallet2 are carried by the robot, pallet1 and pallet2 are the same pallet.
-    ! p1 [pallet], p2 [pallet]: (carried(p1) & carried(p2)) => p1 = p2.
+	// The robot can carry no more than one pallet at a time, hence:
+	// If both pallet1 and pallet2 are carried by the robot, pallet1 and pallet2 are the same pallet.
+	! p1 [pallet], p2 [pallet]: (carried(p1) & carried(p2)) => p1 = p2.
     
-    //The robot cannot stand on a stack of pallets, hence, pallets only have the same position as the robot when they are being carried by the robot.
-    ! p [pallet]: (position(p) = robotposition) <=> carried(p).
+	// The robot cannot stand on a stack of pallets, hence, pallets only have the same position as the robot 
+	// when they are being carried by the robot.
+	! p [pallet]:  carried(p) <=> (position(p) = robotposition).
     
-    //Helper for the next expression. a pallet p1 is above another pallet p2 if above(p1,p2). There may or may not be other pallets in between.
-    {
-     	! p1 [pallet], p2 [pallet]: above(p1,p2) <- on(p1,p2).
-        ! p1 [pallet], p2 [pallet], p3 [pallet]: 
-        	above(p1,p3) <- above(p1,p2) & above (p2,p3).
-    }
+	// Helper for the next expression. a pallet p1 is above another pallet p2 if above(p1,p2). 
+	// There may or may not be other pallets in between.
+	{
+		! p1 [pallet], p2 [pallet]: above(p1,p2) <- on(p1,p2).
+		! p1 [pallet], p2 [pallet], p3 [pallet]: 
+			above(p1,p3) <- above(p1,p2) & above(p2,p3).
+	}
     
-    //It cannot be the case that pallet p1 is positioned on pallet p2 and at the same time pallet p2 rests on pallet p1
-    ! p1 [pallet], p2 [pallet]: above(p1,p2) => (~above(p2,p1)).
+	// It cannot be the case that pallet p1 is above pallet p2 and at the same time pallet p2 is above p1.
+	// Therefore pallet p1 cannot rest on pallet p2 if pallet p2 rests on pallet p1.
+	! p1 [pallet], p2 [pallet]: above(p1,p2) => (~above(p2,p1)).
     
-    //at most one other pallet resting on every other pallet.
-    //hence if two pallets are resting on the same pallet, the former two are actually the same pallet.
-    ! p1 [pallet], p2 [pallet], p [pallet]: (on(p1,p) & on(p2,p)) => (p1 = p2).
+	// At most one other pallet resting on every other pallet.
+	// Hence if two pallets are resting on the same pallet, the former two are actually the same pallet.
+	! p1 [pallet], p2 [pallet], p3 [pallet]: (on(p1,p3) & on(p2,p3)) => (p1 = p2).
     
-    //height pallet shit hierzo
-    ! p [pallet]: heightOf(p) = 
-    	#{p2 [pallet]: (position(p)=position(p2)) &  (~above(p2,p))} + 1.
+	// Height pallet - 1: The amount of pallets on the same position, which are not above this pallet.
+	! p1 [pallet]: heightOf(p1) = 
+		#{p2 [pallet]: (position(p1) = position(p2)) & (~above(p2, p1))} + 1.
     
-    //stacks of pallets are limited in height by the ceiling of the warehouse
-    ! p [pallet]: heightOf(p) < (ceiling + 1).
-    
+	// Stacks of pallets are limited in height by the ceiling of the warehouse.
+	! p [pallet]: heightOf(p) =< ceiling.
 }
