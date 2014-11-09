@@ -1,0 +1,98 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\numberwithin{equation}{section} % Number equations within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{figure}{section} % Number figures within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{table}{section} % Number tables within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{Katholieke Universiteit Leuven} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge MCS project: Part 1 \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Bart Verhoeven \& Dieter Jordens} % Your name
+
+\date{\normalsize November 9, 2014} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+\section{Design decisions}
+
+%------------------------------------------------
+
+\begin{itemize}
+	\item Introduced predicate and function symbols
+		\begin{itemize}
+		\item \textbf{above(pallet,pallet)} is true if and only if $\langle$the first pallet is located above the second pallet, but 0 or more pallets are allowed to be in between those two pallets$\rangle$
+		\item \textbf{heightOf(pallet)} is $\langle$the height of this pallet, therefore the amount of pallets beneath this pallet + 1$\rangle$
+		\end{itemize}
+     \item Total time spent (3h \textbf{both})
+     \begin{itemize}
+     	\item Logical specification + creating solution (2h)
+        \item Report (1h)
+     \end{itemize}
+\end{itemize}
+We only described valid situations and no actions, because this is the second part of the project (e.g. not drive out the grid, pick up/ put down pallet, rotation).\\
+Inaccessible positions are inaccessible for robots and pallets. 
+The robot can carry one pallet, therefore we specified that the robot and the pallet are on the same position when the robot carries this pallet.\\
+Pallets can be stacked, so we had to define the predicate symbol \textbf{above} and the function symbol \textbf{heightOf}. It is possible that one pallet is above the other, with zero or more pallets in between. We did not allow the pallets to be stacked heigher than the ceiling.\\
+The system gives the expected answer to all tests provided. We carefully thought about the names, readability and provided comments for each line. We also checked the indentation to be correct. 
+
+
+\end{document}
