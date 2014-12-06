@@ -1,0 +1,103 @@
+/**
+Onze testfiles
+*/
+
+
+include <mx>
+
+procedure doourchecks(){
+	theories = {
+		{th1, "The robot can go to inacessible locations"},
+		{th2, "Pallets can be on inaccessible locations"},
+		{th3, "Pallets can be on multiple locations"},
+		{th4, "Pallets can be on eachother, but on different locations"},
+		{th5, "The robot can carry more than one"},
+		{th6, "Pallets can be on the same position as the robot, but not being carried (or the other way round: can be carried but on different position)"},
+		{th7, "There can be more than one pallet on the floor on a given location"},
+		{th8, "Some pallets do not obey gravity"},
+		{th9, "At a certain location, there is a stack which is too high"}
+	}
+	
+	
+	basetheo = merge(solution, DEFINITIONS)
+	for i = 1, #theories do
+		local th = merge(theories[i][1],basetheo)
+		local issat = sat(th,testStruc)
+		if issat then 
+			print("---FAIL: "..getname(theories[i][1])..": "..theories[i][2])
+		else
+			print("+verification of "..getname(theories[i][1]).." succeeded! ")
+		end
+	end
+}
+
+vocabulary OUREXTENDEDwarehousevoc{
+	extern vocabulary warehousevoc
+	
+	// extra
+	OUREXTENDEDobeysgravity(pallet)
+	OUREXTENDEDonthefloor(pallet)
+}
+
+theory DEFINITIONS : OUREXTENDEDwarehousevoc {    
+    { !p: OUREXTENDEDonthefloor(p) <- ~carried(p) & ~?p2: on(p,p2). }
+    
+
+    {	!p: OUREXTENDEDobeysgravity(p) <- OUREXTENDEDonthefloor(p) | carried(p).
+    	!p: OUREXTENDEDobeysgravity(p) <- ?p2: OUREXTENDEDobeysgravity(p2) & on(p,p2). }
+    
+}
+
+
+theory th1 : OUREXTENDEDwarehousevoc{
+~(	    ~inaccessible(robotposition)	).
+}
+
+theory th2 : OUREXTENDEDwarehousevoc{
+~(	    !p: ~inaccessible(position(p))	).
+}
+
+
+theory th3 : OUREXTENDEDwarehousevoc{
+~(	    !p1: ?=<1 p2: on(p2,p1)	).
+}
+
+
+theory th4 : OUREXTENDEDwarehousevoc{
+~(	    !p1 p2: on(p1,p2) => position(p1)=position(p2)	).
+}
+
+
+theory th5 : OUREXTENDEDwarehousevoc{
+~(	    #{p: carried(p)} =< 1	).
+}
+
+
+theory th6 : OUREXTENDEDwarehousevoc{
+~(	    !p: position(p)=robotposition <=> carried(p)	).
+}
+
+
+theory th7 : OUREXTENDEDwarehousevoc{
+~(	    !l: #{p : position(p)=l & OUREXTENDEDonthefloor(p)}=<1	).
+}
+
+
+theory th8 : OUREXTENDEDwarehousevoc{
+~(	    !p: OUREXTENDEDobeysgravity(p)	).
+}
+
+
+theory th9 : OUREXTENDEDwarehousevoc{
+~(	    !l: #{p: position(p)=l}=<ceiling	).
+}
+
+
+
+structure testStruc:OUREXTENDEDwarehousevoc{
+	xco={1..3}
+	yco={1..3}
+	height = {0..5}
+	pallet={p1;p2;p3; p4}
+}
+
