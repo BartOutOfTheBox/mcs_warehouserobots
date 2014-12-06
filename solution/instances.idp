@@ -1,4 +1,4 @@
-//include "../modeloplossing/solution.idp" //put your solution here
+include "./solution.idp" //put your solution here
 
 procedure check(){
 	structures = { 

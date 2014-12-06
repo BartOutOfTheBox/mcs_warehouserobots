@@ -56,13 +56,13 @@
 \normalfont \normalsize 
 \textsc{Katholieke Universiteit Leuven} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge MCS project: Part 1 \\ % The assignment title
+\huge MCS project: Part 2 \\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
 \author{Bart Verhoeven \& Dieter Jordens} % Your name
 
-\date{\normalsize November 9, 2014} % Today's date or a custom date
+\date{\normalsize Januari 4, 2015} % Today's date or a custom date
 
 \begin{document}
 
@@ -76,23 +76,6 @@
 
 %------------------------------------------------
 
-\begin{itemize}
-	\item Introduced predicate and function symbols
-		\begin{itemize}
-		\item \textbf{above(pallet,pallet)} is true if and only if $\langle$the first pallet is located above the second pallet, but 0 or more pallets are allowed to be in between those two pallets$\rangle$
-		\item \textbf{heightOf(pallet)} is $\langle$the height of this pallet, therefore the amount of pallets beneath this pallet + 1$\rangle$
-		\end{itemize}
-     \item Total time spent (3h \textbf{both})
-     \begin{itemize}
-     	\item Logical specification + creating solution (2h)
-        \item Report (1h)
-     \end{itemize}
-\end{itemize}
-We only described valid situations and no actions, because this is the second part of the project (e.g. not drive out the grid, pick up/ put down pallet, rotation).\\
-Inaccessible positions are inaccessible for robots and pallets. 
-The robot can carry one pallet, therefore we specified that the robot and the pallet are on the same position when the robot carries this pallet.\\
-Pallets can be stacked, so we had to define the predicate symbol \textbf{above} and the function symbol \textbf{heightOf}. It is possible that one pallet is above the other, with zero or more pallets in between. We did not allow the pallets to be stacked heigher than the ceiling.\\
-The system gives the expected answer to all tests provided. We carefully thought about the names, readability and provided comments for each line. We also checked the indentation to be correct. 
 
 
 \end{document}
