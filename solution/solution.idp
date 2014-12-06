@@ -71,4 +71,11 @@ theory solution: warehousevoc{
     
 	// Stacks of pallets are limited in height by the ceiling of the warehouse.
 	! p [pallet]: heightOf(p) =< ceiling.
+	
+	// Pallets on top of each other, have to have the same location.
+	! p1 [pallet], p2 [pallet]: on(p1,p2) => (position(p1) = position(p2)).
+	
+	// At most one pallet resting on the floor on the same location.
+	// Hence if two pallets are resting on the same location on the floor, these pallets are actually the same paller.
+	! p1 [pallet], p2 [pallet]: ~above(p1,p2) & ~above(p2,p1) => (position(p1) ~= position(p2)).
 }
