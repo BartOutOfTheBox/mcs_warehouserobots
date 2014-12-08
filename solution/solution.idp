@@ -16,14 +16,36 @@ LTCvocabulary warehousevoc{
 	execute(Time,action)
 
 	on(Time,pallet,pallet)
+	// Helper predicates
+	I_on(pallet,pallet)	// Initial
+	C_on(Time,pallet,pallet)	// Causes
+	Cn_on(Time,pallet,pallet)	// Causes not
+	
 	carried(Time,pallet)
+	// Helper predicates
+	I_carried(pallet)	// Initial
+	C_carried(Time,pallet)	// Causes
+	Cn_carried(Time,pallet)	// Causes not
 
 	type xco isa nat
 	type yco isa nat	
 	type location constructed from {grid(xco,yco)}
 	inaccessible(location)
+	
 	robotposition(Time): location
+	
+	// Helper predicates
+	I_robotposition(location)		// Initial
+	C_robotposition(Time,location)	// Causes
+	Cn_robotposition(Time,location)	// Causes not
+	
 	position(Time,pallet): location
+	
+	// Helper predicates
+	I_position(pallet,location)			// Initial
+	C_position(Time,pallet,location)	// Causes
+	Cn_position(Time,pallet,location)	// Causes not
+	
 	
 	type dir constructed from {north, east, south, west}
 	facing(Time): dir
@@ -85,6 +107,146 @@ theory solution: warehousevoc{
 	// At most one pallet resting on the floor on the same location.
 	// Hence if two pallets are resting on the same location on the floor, these pallets are actually the same pallet.
 	! p1 [pallet], p2 [pallet], t [Time]: ~above(t,p1,p2) & ~above(t,p2,p1) => (position(t,p1) ~= position(t,p2)).
+}
+
+theory timeTheo:V{
+	{
+		Start = MIN[:Time].
+		!t: Next(t) = t+1 <- Time(t+1).
+	}
+}
+
+theory dynTheo:V{
+	{ 
+		// Successor State Action Axiom & Inertia on(Time,pallet,pallet)
+		! p1 [pallet], p2 [pallet]: on(Start,p1,p2) <- I_on(p1,p2).
+		! p1 [pallet], p2 [pallet], t [Time]: 
+			on(Next(t),p1,p2) <- C_on(t,p1,p2).
+		! p1 [pallet], p2 [pallet], t [Time]: 
+			on(Next(t),p1,p2) <- on(t,p1,p2) & ~Cn_on(t,p1,p2).
+	}
+	
+	{
+		// Expressing causations on(Time,pallet,pallet)
+		//TODO
+		! p1 [pallet], p2 [pallet], t [Time] : 
+			C_on(t,p1,p2) <- ? p1 : 
+				execute(t,putDown(p1)) & .
+		! p b t : Cn_on(p,b,t) <- ? p2 : Give(p, b, p2, t).
+	}
+	
+	{
+		// Successor State Action Axiom & Inertia carried(Time,pallet)
+		! p [pallet]: carried(Start,p) <- I_carried(p).
+		! p [pallet], t [time]: carried(Next(t),p) <- C_carried(t,p).
+		! p [pallet], t [time]: 
+			carried(Next(t),p) <- carried(t,p) & ~Cn_carried(t,p).	
+	}
+	
+	{
+		// Expressing causations carried(Time,pallet)
+		//TODO
+	}
+	
+	{
+		// Successor State Action Axiom & Inertia robotposition(Time):location
+		! l [location]: robotposition(Start) = l <- I_robotposition(l).
+		! l [location], t [Time]: 
+			robotposition(Next(t)) = l <- C_robotposition(t,l).
+		! l [location], t [Time]: 
+			robotposition(Next(t)) = 
+				l <- (robotposition(t) = l) & ~Cn_robotposition(t,l).
+	}
+	
+	{
+		// Expressing causations robotposition(Time):location
+		// Facing north and going forwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = north) &
+				(execute(t,moveFront) &
+				(? l1 [location] : l1(x,y) & l(x,y+1)).
+		// Facing north and going backwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = north) &
+				(execute(t,moveBack) &
+				(? l1 [location] : l1(x,y) & l(x,y-1)).
+		// Facing south and going forwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = south) &
+				(execute(t,moveFront) &
+				(? l1 [location] : l1(x,y) & l(x,y-1)).
+		// Facing south and going backwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = south) &
+				(execute(t,moveBack) &
+				(? l1 [location] : l1(x,y) & l(x,y+1)).
+		// Facing east and going forwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = east) &
+				(execute(t,moveFront) &
+				(? l1 [location] : l1(x,y) & l(x+1,y)).
+		// Facing east and going backwards.
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = east) &
+				(execute(t,moveBack) &
+				(? l1 [location] : l1(x,y) & l(x-1,y)).
+		// Facing west and going forwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = west) &
+				(execute(t,moveFront) &
+				(? l1 [location] : l1(x,y) & l(x-1,y)).
+		// Facing west and going backwards
+		! l [location], t [Time] : 
+			C_robotposition(t,l) <- 
+				(facing(t) = west) &
+				(execute(t,moveBack) &
+				(? l1 [location] : l1(x,y) & l(x+1,y)).
+				
+		// reason not to be on the same position is moving.
+		! l [location], t [Time] :  
+			Cn_robotposition(t,l) <- (robotposition(t) = l) &
+										(execute(t,moveFront)).
+		! l [location], t [Time] :  
+			Cn_robotposition(t,l) <- (robotposition(t) = l) &
+										(execute(t,moveBack)).
+	}
+	
+	{
+		// Successor State Action Axiom & Inertia position(Time,pallet):location
+		! p [pallet], l [location]:	position(Start,p) = l <- I_position(p,l).
+		! p [pallet], l [location], t [Time]:
+			position(Next(t),p) = l <- C_position(t,p,l).
+		! p [pallet], l [location], t [Time]:
+			position(Next(t),p) = l <- 
+				(position(t,p) = l) & ~Cn_position(t,p,l).
+	}
+	
+	{
+		// Expressing causations position(Time,pallet):location
+		//TODO
+		! l [location], p [pallet], t [Time] :
+			C_position(t,p,l) <- 
+				execute(t,putDown(p)) & (facing(t)=north) & (robotposition(t)=locr) & locr(x,y) & l(x,y+1).
+		! l [location], p [pallet], t [Time] :
+			C_position(t,p,l) <- 
+				execute(t,putDown(p)) & (facing(t)=east) & (robotposition(t)=locr) & locr(x,y) & l(x+1,y).
+		! l [location], p [pallet], t [Time] :
+			C_position(t,p,l) <- 
+				execute(t,putDown(p)) & (facing(t)=south) & (robotposition(t)=locr) & locr(x,y) & l(x,y-11).
+		! l [location], p [pallet], t [Time] :
+			C_position(t,p,l) <- 
+				execute(t,putDown(p)) & (facing(t)=west) & (robotposition(t)=locr) & locr(x,y) & l(x-1,y).
+				
+		! l [location], p [pallet], t [Time] :  
+			Cn_robotposition(t,l) <- execute(t,pickUp(p)).
+	}
 }
 
 
