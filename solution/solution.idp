@@ -61,6 +61,9 @@ LTCvocabulary warehousevoc{
 	// The top of the pallet counts as the point of height.
 	// A pallet standing on the floor thus has height 1.
 	heightOf(Time, pallet): height
+	
+	// Denotes the next location the robot would be on if it were to move forwards.
+	nextPosition(Time): location
 }
 
 theory solution: warehousevoc{
@@ -107,6 +110,8 @@ theory solution: warehousevoc{
 	// At most one pallet resting on the floor on the same location.
 	// Hence if two pallets are resting on the same location on the floor, these pallets are actually the same pallet.
 	! p1 [pallet], p2 [pallet], t [Time]: ~above(t,p1,p2) & ~above(t,p2,p1) => (position(t,p1) ~= position(t,p2)).
+	
+	//TODO add rules for nextPosition here.
 }
 
 theory timeTheo:V{
@@ -128,10 +133,14 @@ theory dynTheo:V{
 	
 	{
 		// Expressing causations on(Time,pallet,pallet)
-		//TODO
+		// TODO make a predicate nextPosition
+		// TODO make a predicate free(Time,pallet) meaning: p is on top of the stack on the ground
 		! p1 [pallet], p2 [pallet], t [Time] : 
-			C_on(t,p1,p2) <- ? p1 : 
-				execute(t,putDown(p1)) & .
+			C_on(t,p1,p2) <- ? l [location] :
+				execute(t,putDown(p1)) &
+				(position(t,p2) = l) &
+				(nextPosition(t) = l) &
+				free(t,p2).
 		! p b t : Cn_on(p,b,t) <- ? p2 : Give(p, b, p2, t).
 	}
 	
@@ -145,7 +154,10 @@ theory dynTheo:V{
 	
 	{
 		// Expressing causations carried(Time,pallet)
-		//TODO
+		! p [pallet], t [Time]:
+			C_carried(t,p) <- execute(t,pickUp(p)).
+		! p [pallet], t[time]:
+			Cn_carried(t,p) <- execute(t,putDown(p)).
 	}
 	
 	{
@@ -160,6 +172,8 @@ theory dynTheo:V{
 	
 	{
 		// Expressing causations robotposition(Time):location
+		//TODO simplifyale by adding a predicate nextPosition?
+		//TODO add a predicate prevPosition?
 		// Facing north and going forwards
 		! l [location], t [Time] : 
 			C_robotposition(t,l) <- 
@@ -230,7 +244,7 @@ theory dynTheo:V{
 	
 	{
 		// Expressing causations position(Time,pallet):location
-		//TODO
+		//TODO simplifyable by adding a predicate nextPosition?
 		! l [location], p [pallet], t [Time] :
 			C_position(t,p,l) <- 
 				execute(t,putDown(p)) & (facing(t)=north) & (robotposition(t)=locr) & locr(x,y) & l(x,y+1).
