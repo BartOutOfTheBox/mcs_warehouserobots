@@ -72,10 +72,39 @@
 %	PROBLEM 1
 %----------------------------------------------------------------------------------------
 
-\section{Design decisions}
+\section{Design decisions IDP}
 
+Introduced predicate and function symbols:
+\begin{itemize}
+	\item \textbf{I\_on(p1,p2)} is true if pallet p1 is initially on pallet p2 (ie on(Start,p1,p2)),
+	\item \textbf{C\_on(t,p1,p2)} is true if there is a reason for pallet p1 to be on pallet p2 at timestamp t+1. This is the case when p2 is on top of the stack, and the robot puts p1 down on the position of p2.
+	\item \textbf{Cn\_on(t,p1,p2)} is true if there is a reason for pallet p1 not to be on pallet p2 at timestamp t+1. This happens when the robot picks up pallet p1.
+	\item \textbf{I\_carried(p1)} is true if pallet p1 is initially carried by the robot (ie carried(Start,p1)),
+	\item \textbf{C\_carried(t,p)} is true if there is a reason for pallet p to be carried by the robot at timestamp t+1. This is the case if the robot picks up this pallet at timestamp t.
+	\item \textbf{Cn\_carried(t,p)} is true if there is a reason for pallet p to not be carried by the robot at time t+1. This happens when the robot puts down this pallet at timestamp t.
+	\item \textbf{I\_robotposition(l)} is true if the robot is initially located at l (ie robotposition(Start)=l),
+	\item \textbf{C\_robotposition(t,l)} is true if there is a reason for the robot to be on location l at time t+1. The robot will be on nextPosition(t+1) if he moves forwards. And on prevPosition(t+1) if he moves backwards.
+	\item \textbf{Cn\_robotposition(t,l)} is true if there is a reason for the robot not to be on location l at the next timestamp. This is the case when the robot moves.
+	\item \textbf{I\_position(p,l)} is true if pallet p is initially at location l. ie. position(Start,p)=l.
+	\item \textbf{C\_position(t,p,l)} is true if there is a reason for pallet p to be on location l at time t+1. This reason can be being put down, and being carried by a moving robot.
+	\item \textbf{Cn\_position(t,p,l)} is true if there is a reason for pallet p not to be on location l at time t+1. This reason can be being picked up, and being carried by a moving robot.
+	\item \textbf{I\_facing(dir)} is true if the robot is initially facing direction dir.
+	\item \textbf{C\_facing(Time,dir)} is true if the robot has reason to face direction dir at time Time+1. This reason is turning.
+	\item \textbf{Cn\_facing(Time,dir)} is true if the robot has a reason not to face direction dir at time Time+1. This reason is turning.
+	\item \textbf{above(t, p1, p2)} is true if and only if $\langle$the pallet p1 is located above pallet p2 at time t, but 0 or more pallets are allowed to be in between those two pallets$\rangle$,
+	\item \textbf{heightOf(t, pallet): height} is $\langle$the height of this pallet at time t, therefore the amount of pallets beneath this pallet$\rangle$,
+	\item \textbf{free(t, p)} means it is possible to pick up pallet p at timestamp t,
+	\item \textbf{partial nextPosition(Time): location} denotes the next grid(xco,yco) the robot would be on if it were to move forwards,
+	\item \textbf{partial prevPosition(Time): location} denotes the next grid(xco,yco) the robot would be on if it were to move backwards.
+\end{itemize}
 %------------------------------------------------
+%----------------------------------------------------------------------------------------
+%	PROBLEM 2
+%----------------------------------------------------------------------------------------
 
-
-
+\section{tijdsbesteding}
+ \begin{itemize}
+	\item IDP: Bart 20u + Dieter 0.5u
+	\item NUsmv: Bart 1u + Dieter 15u
+ \end{itemize}
 \end{document}
