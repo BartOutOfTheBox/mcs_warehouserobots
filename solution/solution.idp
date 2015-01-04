@@ -49,6 +49,10 @@ LTCvocabulary warehousevoc{
 	
 	type dir constructed from {north, east, south, west}
 	facing(Time): dir
+	// Helper predicates
+	I_facing(dir)
+	C_facing(Time,dir)
+	Cn_facing(Time,dir)
 	
 	type height isa nat
 	ceiling: height
@@ -62,8 +66,13 @@ LTCvocabulary warehousevoc{
 	// A pallet standing on the floor thus has height 1.
 	heightOf(Time, pallet): height
 	
-	// Denotes the next location the robot would be on if it were to move forwards.
-	nextPosition(Time): location
+	// free(t,p) means it is possible to pick up pallet p at timestamp t.
+	free(Time, pallet)
+	
+	// Denotes the next grid(xco,yco) the robot would be on if it were to move forwards.
+	partial nextPosition(Time): location
+	// Denotes the next grid(xco,yco) the robot would be on if it were to move backwards.
+	partial prevPosition(Time): location
 }
 
 theory solution: warehousevoc{
@@ -109,19 +118,70 @@ theory solution: warehousevoc{
 	
 	// At most one pallet resting on the floor on the same location.
 	// Hence if two pallets are resting on the same location on the floor, these pallets are actually the same pallet.
-	! p1 [pallet], p2 [pallet], t [Time]: ~above(t,p1,p2) & ~above(t,p2,p1) => (position(t,p1) ~= position(t,p2)).
+	! p1 [pallet], p2 [pallet], t [Time]: 
+		~above(t,p1,p2) & ~above(t,p2,p1) & (p1 ~= p2) 
+			=> (position(t,p1) ~= position(t,p2)).
 	
-	//TODO add rules for nextPosition here.
-}
-
-theory timeTheo:V{
+	// TODO doc rules for next pos
 	{
-		Start = MIN[:Time].
-		!t: Next(t) = t+1 <- Time(t+1).
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			nextPosition(t) = l1 <- 
+				(facing(t) = north) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid(x2,(y2+1))).
+				
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			nextPosition(t) = l1 <- 
+				(facing(t) = east) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid((x2+1),y2)).
+				
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			nextPosition(t) = l1 <- 
+				(facing(t) = south) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid(x2,(y2-1))).
+				
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			nextPosition(t) = l1 <- 
+				(facing(t) = west) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid((x2-1),y2)).
 	}
-}
-
-theory dynTheo:V{
+	
+	//TODO doc rules for prevPosition here.
+	{
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			prevPosition(t) = l1 <- 
+				(facing(t) = north) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid(x2,(y2-1))).
+				
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			prevPosition(t) = l1 <- 
+				(facing(t) = east) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid((x2-1),y2)).
+				
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			prevPosition(t) = l1 <- 
+				(facing(t) = south) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid(x2,(y2+1))).
+				
+		! l1 [location], x2 [xco], y2 [yco], t [Time]:
+			prevPosition(t) = l1 <- 
+				(facing(t) = west) &
+				(robotposition(t) = grid(x2,y2)) &
+				(l1 = grid((x2+1),y2)).
+	}
+	
+	// a pallet is free to be picked up if and only if it's not being carried, and there does not exist a pallet which is standing on it.
+	! p [pallet], t [Time]: free(t,p) <=> (~carried(t,p) & ~(? p2 [pallet]: on(t,p2,p))).
+	
+	// ________________________________________________________________
+	//                   THEORY FOR DYNAMICS
+	// ________________________________________________________________
 	{ 
 		// Successor State Action Axiom & Inertia on(Time,pallet,pallet)
 		! p1 [pallet], p2 [pallet]: on(Start,p1,p2) <- I_on(p1,p2).
@@ -134,21 +194,21 @@ theory dynTheo:V{
 	{
 		// Expressing causations on(Time,pallet,pallet)
 		// TODO make a predicate nextPosition
-		// TODO make a predicate free(Time,pallet) meaning: p is on top of the stack on the ground
 		! p1 [pallet], p2 [pallet], t [Time] : 
 			C_on(t,p1,p2) <- ? l [location] :
 				execute(t,putDown(p1)) &
 				(position(t,p2) = l) &
 				(nextPosition(t) = l) &
 				free(t,p2).
-		! p b t : Cn_on(p,b,t) <- ? p2 : Give(p, b, p2, t).
+		! p1 [pallet], p2 [pallet], t [Time] :
+			Cn_on(t,p1,p2) <- execute(t,pickUp(p1)).
 	}
 	
 	{
 		// Successor State Action Axiom & Inertia carried(Time,pallet)
 		! p [pallet]: carried(Start,p) <- I_carried(p).
-		! p [pallet], t [time]: carried(Next(t),p) <- C_carried(t,p).
-		! p [pallet], t [time]: 
+		! p [pallet], t [Time]: carried(Next(t),p) <- C_carried(t,p).
+		! p [pallet], t [Time]: 
 			carried(Next(t),p) <- carried(t,p) & ~Cn_carried(t,p).	
 	}
 	
@@ -156,8 +216,52 @@ theory dynTheo:V{
 		// Expressing causations carried(Time,pallet)
 		! p [pallet], t [Time]:
 			C_carried(t,p) <- execute(t,pickUp(p)).
-		! p [pallet], t[time]:
+		! p [pallet], t[Time]:
 			Cn_carried(t,p) <- execute(t,putDown(p)).
+	}
+	
+	{ 
+		// Successor State Action Axiom & Inertia facing(t):dir
+		! d [dir]: facing(Start) = d <- I_facing(d).
+		! d [dir], t [Time]: 
+			facing(Next(t)) = d <- C_facing(t,d).
+		! d [dir], t [Time]: 
+			facing(Next(t)) = d <- (facing(t)=d) & ~Cn_facing(t,d).
+	}
+	
+	{
+		// Expressing causations facing(t):dir
+		// North to East
+		! t [Time] : 
+			C_facing(t,east) <- (facing(t)=north) & execute(t,rotateRight).
+		// East to South
+		! t [Time] : 
+			C_facing(t,south) <- (facing(t)=east) & execute(t,rotateRight).
+		// South to West
+		! t [Time] : 
+			C_facing(t,west) <- (facing(t)=south) & execute(t,rotateRight).
+		// West to North
+		! t [Time] : 
+			C_facing(t,north) <- (facing(t)=west) & execute(t,rotateRight).
+		
+		// North to West
+		! t [Time] : 
+			C_facing(t,west) <- (facing(t)=north) & execute(t,rotateLeft).
+		// West to South
+		! t [Time] : 
+			C_facing(t,south) <- (facing(t)=west) & execute(t,rotateLeft).
+		// South to East
+		! t [Time] : 
+			C_facing(t,east) <- (facing(t)=south) & execute(t,rotateLeft).
+		// East to North
+		! t [Time] : 
+			C_facing(t,north) <- (facing(t)=east) & execute(t,rotateLeft).
+		
+		// Reason not to have the same facing, is turning.
+		! d [dir], t [Time] :
+			Cn_facing(t,d) <- 
+				(facing(t)=d) & 
+				(execute(t,rotateRight) | execute(t,rotateLeft)).
 	}
 	
 	{
@@ -172,56 +276,16 @@ theory dynTheo:V{
 	
 	{
 		// Expressing causations robotposition(Time):location
-		//TODO simplifyale by adding a predicate nextPosition?
-		//TODO add a predicate prevPosition?
-		// Facing north and going forwards
+		// Going forwards
 		! l [location], t [Time] : 
 			C_robotposition(t,l) <- 
-				(facing(t) = north) &
-				(execute(t,moveFront) &
-				(? l1 [location] : l1(x,y) & l(x,y+1)).
-		// Facing north and going backwards
+				(nextPosition(t) = l) &
+				(execute(t,moveFront)).
+		// Going backwards
 		! l [location], t [Time] : 
 			C_robotposition(t,l) <- 
-				(facing(t) = north) &
-				(execute(t,moveBack) &
-				(? l1 [location] : l1(x,y) & l(x,y-1)).
-		// Facing south and going forwards
-		! l [location], t [Time] : 
-			C_robotposition(t,l) <- 
-				(facing(t) = south) &
-				(execute(t,moveFront) &
-				(? l1 [location] : l1(x,y) & l(x,y-1)).
-		// Facing south and going backwards
-		! l [location], t [Time] : 
-			C_robotposition(t,l) <- 
-				(facing(t) = south) &
-				(execute(t,moveBack) &
-				(? l1 [location] : l1(x,y) & l(x,y+1)).
-		// Facing east and going forwards
-		! l [location], t [Time] : 
-			C_robotposition(t,l) <- 
-				(facing(t) = east) &
-				(execute(t,moveFront) &
-				(? l1 [location] : l1(x,y) & l(x+1,y)).
-		// Facing east and going backwards.
-		! l [location], t [Time] : 
-			C_robotposition(t,l) <- 
-				(facing(t) = east) &
-				(execute(t,moveBack) &
-				(? l1 [location] : l1(x,y) & l(x-1,y)).
-		// Facing west and going forwards
-		! l [location], t [Time] : 
-			C_robotposition(t,l) <- 
-				(facing(t) = west) &
-				(execute(t,moveFront) &
-				(? l1 [location] : l1(x,y) & l(x-1,y)).
-		// Facing west and going backwards
-		! l [location], t [Time] : 
-			C_robotposition(t,l) <- 
-				(facing(t) = west) &
-				(execute(t,moveBack) &
-				(? l1 [location] : l1(x,y) & l(x+1,y)).
+				(prevPosition(t) = l) &
+				(execute(t,moveBack)).
 				
 		// reason not to be on the same position is moving.
 		! l [location], t [Time] :  
@@ -244,19 +308,10 @@ theory dynTheo:V{
 	
 	{
 		// Expressing causations position(Time,pallet):location
-		//TODO simplifyable by adding a predicate nextPosition?
 		! l [location], p [pallet], t [Time] :
 			C_position(t,p,l) <- 
-				execute(t,putDown(p)) & (facing(t)=north) & (robotposition(t)=locr) & locr(x,y) & l(x,y+1).
-		! l [location], p [pallet], t [Time] :
-			C_position(t,p,l) <- 
-				execute(t,putDown(p)) & (facing(t)=east) & (robotposition(t)=locr) & locr(x,y) & l(x+1,y).
-		! l [location], p [pallet], t [Time] :
-			C_position(t,p,l) <- 
-				execute(t,putDown(p)) & (facing(t)=south) & (robotposition(t)=locr) & locr(x,y) & l(x,y-11).
-		! l [location], p [pallet], t [Time] :
-			C_position(t,p,l) <- 
-				execute(t,putDown(p)) & (facing(t)=west) & (robotposition(t)=locr) & locr(x,y) & l(x-1,y).
+				execute(t,putDown(p)) &
+				(nextPosition(t) = l).
 				
 		! l [location], p [pallet], t [Time] :  
 			Cn_robotposition(t,l) <- execute(t,pickUp(p)).
@@ -312,21 +367,51 @@ structure verStruc:warehousevoc{
 	ceiling = 3
 }
 
+structure testStruc2:warehousevoc{
+	Time = {0..9}
+    Start = 0
+    Next = {0->1;1->2;2->3;3->4;4->5;5->6;6->7;7->8;8->9}
+	
+    xco={1..3}
+    yco={1..3}
+    height = {0..3}
+    pallet ={p1;p2;p3;p4}
+    inaccessible={grid(2,3)}
+    position<ct>={0,p1->grid(1,3);0,p2->grid(1,3);0,p3->grid(2,2);0,p4->grid(2,2)}
+    on<ct>={0,p2,p1;0,p4,p3}
+    robotposition<ct>={0->grid(1,2)}
+    facing<ct>={0->north()}
+
+    ceiling = 3
+	
+	carried<cf>={9,p1}
+    position<cf>={
+        9,p1->grid(1,3);
+        9,p1->grid(1,2);
+        9,p1->grid(1,1);
+        9,p1->grid(2,1);
+        9,p1->grid(2,2);
+    }
+	
+	//On the last time, you cannot perform any actions
+    execute<cf> = {9,rotateRight(); 9,rotateLeft(); 9,moveFront(); 9,moveBack(); 9,pickUp(p1)}
+}
+
 
 procedure main(){
     //Depending on what you wish to do, execute one of the following methods:
 	 
     //This method (defined in the instances.idp) checks some given worlds for consistency
-	check()
+	//check()
 
     //This method lets you walk through your solutions interactively
-	simulate_interactive(solution,verStruc)
+	simulate_interactive(solution,testStruc2)
 	
     //This method walks randomly trough the solutions, 5 steps deep
-	simulate_random(solution,verStruc,5)
+	//simulate_random(solution,verStruc,5)
 	
     //This method (defined above) simply searches models of your theory
-	stdoptions.nbmodels=5 //Find 5 models	
-	printmodels(modelexpand(solution,verStruc))
+	//stdoptions.nbmodels=5 //Find 5 models	
+	//printmodels(modelexpand(solution,testStruc2))
 	
 }
