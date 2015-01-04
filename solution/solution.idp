@@ -276,6 +276,12 @@ theory solution: warehousevoc{
 				(execute(t,rotateRight) | execute(t,rotateLeft)).
 	}
 	
+	// The robot cannot go forwards if a pallet is blocking him.
+	! t [Time]: (? p [pallet]: nextPosition(t) = position(t,p))
+					=> ~execute(t,moveFront).
+	! t [Time]: (? p [pallet]: prevPosition(t) = position(t,p))
+					=> ~execute(t,moveBack).				
+
 	{
 		// Successor State Action Axiom & Inertia robotposition(Time):location
 		! l [location]: robotposition(Start) = l <- I_robotposition(l).
@@ -357,32 +363,58 @@ theory solution: warehousevoc{
 	}
 }
 
-
+//It is possible to make a stack containing all pallets;
 theory verification1: warehousevoc{
-	//Verify something here
+	// There exists a time and place where all pallets are on the same location.
+	? l [location], t [Time]: ! p [pallet]: position(t,p) = l.
 }
 
+//It is possible to make a stack containing all pallets;
 procedure verification1proc(struc){
-	//Do something here: verify verification1 in the context of structure struc. 
-	//At least print whether the verification is satisified or not.
+	basetheo = merge(solution, verification1)
+	stdoptions.nbmodels = 1
+	local sols = modelexpand(basetheo, struc)
+	if #sols < 1 then
+		print(">>>FAIL: It is NOT possible to make a stack containing all pallets!")
+		return
+	end
+	print(">>>SUCCESS: It is possible to make a stack containing all pallets!")
 }
 
+//Any stack of at least two pallets remains a stack of at least one pallet for the next three timesteps;
 theory verification2: warehousevoc{
-	//Verify something here
+	! t [Time], p1 [pallet], p2 [pallet], l [location]:
+		(position(t,p1) = position(t,p2) = l) =>
+			(position(Next(Next(Next(t))),p1) ~= l) & (position(Next(Next(Next(t))),p2) ~= l).
 }
 
+//Any stack of at least two pallets remains a stack of at least one pallet for the next three timesteps;
 procedure verification2proc(struc){
-	//Do something here: verify verification2 in the context of structure struc. 
-	//At least print whether the verification is satisified or not.
+	basetheo = merge(solution, verification2)
+	stdoptions.nbmodels = 1
+	local sols = modelexpand(basetheo, struc)
+	if #sols < 1 then
+		print(">>>SUCCESS: It is not possible to unstack in 3 moves!")
+		return
+	end
+	print(">>>FAIL: It IS possible to unstack in 3 moves!")
 }
 
+//The robot cannot drive through pallets.
 theory verification3: warehousevoc{
-	//Verify something here
+	? t [Time], p [pallet] : (nextPosition(t)=position(t,p)) & execute(t,moveFront).
 }
 
+//The robot cannot drive through pallets.
 procedure verification3proc(struc){
-	//Do something here: verify verification3 in the context of structure struc. 
-	//At least print whether the verification is satisified or not.
+	basetheo = merge(solution, verification3)
+	stdoptions.nbmodels = 1
+	local sols = modelexpand(basetheo, struc)
+	if #sols < 1 then
+		print(">>>SUCCESS: It is not possible to drive through pallets!")
+		return
+	end
+	print(">>>FAIL: It IS possible to drive through pallets!")
 }
 
 
@@ -411,6 +443,9 @@ procedure main(){
 	 
     //This method (defined in the instances.idp) checks some given worlds for consistency
 	check()
+	
+	//Run our own checks
+	allVerifications()
 
     //This method lets you walk through your solutions interactively
 	//simulate_interactive(solution,verStruc)
