@@ -40,7 +40,6 @@ LTCvocabulary warehousevoc{
 	Cn_robotposition(Time,location)	// Causes not
 	
 	position(Time,pallet): location
-	
 	// Helper predicates
 	I_position(pallet,location)			// Initial
 	C_position(Time,pallet,location)	// Causes
@@ -88,7 +87,7 @@ theory solution: warehousevoc{
     
 	// The robot cannot stand on a stack of pallets, hence, pallets only have the same position as the robot 
 	// when they are being carried by the robot.
-	! p [pallet], t [Time]:  carried(t, p) <=> (position(t, p) = robotposition(t)).
+	! p [pallet], t [Time]:  (position(t, p) = robotposition(t)) <=> carried(t, p).
     
 	// Helper for the next expression. a pallet p1 is above another pallet p2 if above(p1,p2). 
 	// There may or may not be other pallets in between.
@@ -108,7 +107,7 @@ theory solution: warehousevoc{
     
 	// Height pallet - 1: The amount of pallets on the same position, which are not above this pallet.
 	! p1 [pallet], t [Time]: heightOf(t,p1) = 
-		#{p2 [pallet]: (position(t,p1) = position(t,p2)) & (~above(t,p2, p1))} + 1.
+		#{p2 [pallet]: (position(t,p1) = position(t,p2)) & (~above(t,p2, p1))}.
     
 	// Stacks of pallets are limited in height by the ceiling of the warehouse.
 	! p [pallet], t [Time]: heightOf(t,p) =< ceiling.
@@ -182,6 +181,10 @@ theory solution: warehousevoc{
 	// ________________________________________________________________
 	//                   THEORY FOR DYNAMICS
 	// ________________________________________________________________
+	
+	// The robot can only do one action at a time
+	! a1 [action], a2 [action], t [Time]:
+		execute(t,a1) & execute(t,a2) => a1 = a2.
 	{ 
 		// Successor State Action Axiom & Inertia on(Time,pallet,pallet)
 		! p1 [pallet], p2 [pallet]: on(Start,p1,p2) <- I_on(p1,p2).
@@ -193,17 +196,27 @@ theory solution: warehousevoc{
 	
 	{
 		// Expressing causations on(Time,pallet,pallet)
-		// TODO make a predicate nextPosition
 		! p1 [pallet], p2 [pallet], t [Time] : 
 			C_on(t,p1,p2) <- ? l [location] :
+				(p1 ~= p2) &
 				execute(t,putDown(p1)) &
 				(position(t,p2) = l) &
 				(nextPosition(t) = l) &
 				free(t,p2).
 		! p1 [pallet], p2 [pallet], t [Time] :
-			Cn_on(t,p1,p2) <- execute(t,pickUp(p1)).
+			Cn_on(t,p1,p2) <- (p1 ~= p2) & execute(t,pickUp(p1)).
 	}
 	
+	// You can only put down pallets you carry
+	! p [pallet], t [Time]: execute(t,putDown(p)) => carried(t,p).
+	
+	// You can only pick up pallets in front of you
+	! p [pallet], t [Time]: 
+		execute(t,pickUp(p)) => (nextPosition(t) = position(t,p)).
+		
+	// You can only pick up free pallets
+	! p [pallet], t [Time]:
+		execute(t,pickUp(p)) => free(t,p).
 	{
 		// Successor State Action Axiom & Inertia carried(Time,pallet)
 		! p [pallet]: carried(Start,p) <- I_carried(p).
@@ -314,7 +327,7 @@ theory solution: warehousevoc{
 				(nextPosition(t) = l).
 				
 		! l [location], p [pallet], t [Time] :  
-			Cn_robotposition(t,l) <- execute(t,pickUp(p)).
+			Cn_position(t,p,l) <- (position(t,p) = l) & execute(t,pickUp(p)).
 	}
 }
 
@@ -368,33 +381,22 @@ structure verStruc:warehousevoc{
 }
 
 structure testStruc2:warehousevoc{
-	Time = {0..9}
+	Time = {0..3}
     Start = 0
-    Next = {0->1;1->2;2->3;3->4;4->5;5->6;6->7;7->8;8->9}
+    Next = {0->1;1->2;2->3}
 	
-    xco={1..3}
-    yco={1..3}
+    xco={1..2}
+    yco={1..2}
     height = {0..3}
-    pallet ={p1;p2;p3;p4}
-    inaccessible={grid(2,3)}
-    position<ct>={0,p1->grid(1,3);0,p2->grid(1,3);0,p3->grid(2,2);0,p4->grid(2,2)}
-    on<ct>={0,p2,p1;0,p4,p3}
+    pallet ={p1}
+    inaccessible={}
+    position<ct>={0,p1->grid(2,1)}
     robotposition<ct>={0->grid(1,2)}
-    facing<ct>={0->north()}
+    facing<ct>={0->south()}
+	execute<ct>={0,moveFront();1,rotateLeft();2,pickUp(p1)}
+	execute<cf> = {3,rotateRight(); 3,rotateLeft(); 3,moveFront(); 3,moveBack(); 3,pickUp(p1); 3,putDown(p1)}
 
     ceiling = 3
-	
-	carried<cf>={9,p1}
-    position<cf>={
-        9,p1->grid(1,3);
-        9,p1->grid(1,2);
-        9,p1->grid(1,1);
-        9,p1->grid(2,1);
-        9,p1->grid(2,2);
-    }
-	
-	//On the last time, you cannot perform any actions
-    execute<cf> = {9,rotateRight(); 9,rotateLeft(); 9,moveFront(); 9,moveBack(); 9,pickUp(p1)}
 }
 
 
@@ -405,10 +407,14 @@ procedure main(){
 	//check()
 
     //This method lets you walk through your solutions interactively
-	simulate_interactive(solution,testStruc2)
+	//simulate_interactive(solution,testStruc2)
 	
     //This method walks randomly trough the solutions, 5 steps deep
-	//simulate_random(solution,verStruc,5)
+	//simulate_random(solution,testStruc2,5)
+	
+	stdoptions.liftedunitpropagation=false
+	stdoptions.groundwithbounds=false
+	printcore(solution,testStruc2)
 	
     //This method (defined above) simply searches models of your theory
 	//stdoptions.nbmodels=5 //Find 5 models	
