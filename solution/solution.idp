@@ -330,6 +330,17 @@ theory solution: warehousevoc{
 			C_position(t,p,l) <-
 				execute(t,pickUp(p)) &
 				(robotposition(t) = l).
+		// The robot moving is a reason to be at the new place of the robot, if this pallet is being carried.
+		! l [location], p [pallet], t [Time]:
+			C_position(t,p,l) <-
+				carried(t,p) &
+				execute(t,moveFront) &
+				(nextPosition(t)=l).
+		! l [location], p [pallet], t [Time]:
+			C_position(t,p,l) <-
+				carried(t,p) &
+				execute(t,moveBack) &
+				(prevPosition(t)=l).
 				
 		// Picking up a pallet is a reason not to be on the previous pallets place.
 		! l [location], p [pallet], t [Time] :  
@@ -337,6 +348,12 @@ theory solution: warehousevoc{
 		// Putting down a pallet is a reason not to be on the robots place.
 		! l [location], p [pallet], t [Time] :  
 			Cn_position(t,p,l) <- (robotposition(t) = l) & execute(t,putDown(p)).
+		// The robot moving is a reason not to be on its previous place, if the pallet is being carried.
+		! l [location], p [pallet], t [Time] :  
+			Cn_position(t,p,l) <- 
+				carried(t,p) & 
+				(robotposition(t) = l) & 
+				(execute(t,moveFront) | execute(t,moveBack)).
 	}
 }
 
@@ -389,44 +406,25 @@ structure verStruc:warehousevoc{
 	ceiling = 3
 }
 
-structure testStruc2:warehousevoc{
-	Time = {0..6}
-    Start = 0
-    Next = {0->1;1->2;2->3;3->4;4->5;5->6} //;6->7}
-	
-    xco={1..2}
-    yco={1..2}
-    height = {0..3}
-    pallet ={p1;p2}
-    inaccessible={}
-    position<ct>={0,p1->grid(2,1);0,p2->grid(2,2)}
-    robotposition<ct>={0->grid(1,2)}
-    facing<ct>={0->south()}
-	execute<ct>={0,moveFront(); 1,rotateLeft(); 2,pickUp(p1); 3,rotateLeft(); 4,moveFront(); 5,rotateRight()}
-	execute<cf> = {6,rotateRight(); 6,rotateLeft(); 6,moveFront(); 6,moveBack(); 6,pickUp(p1); 6,putDown(p1); 6,pickUp(p2); 6,putDown(p2)}
-
-    ceiling = 3
-}
-
-
 procedure main(){
     //Depending on what you wish to do, execute one of the following methods:
 	 
     //This method (defined in the instances.idp) checks some given worlds for consistency
-	//check()
+	check()
 
     //This method lets you walk through your solutions interactively
-	//simulate_interactive(solution,testStruc2)
+	//simulate_interactive(solution,verStruc)
 	
     //This method walks randomly trough the solutions, 5 steps deep
-	//simulate_random(solution,testStruc2,5)
+	//simulate_random(solution,verStruc,5)
 	
+	//uncomment to find out what the reason is you do not find any models.
 	//stdoptions.liftedunitpropagation=false
 	//stdoptions.groundwithbounds=false
-	//printcore(solution,testStruc2)
+	//printcore(solution,verStruc)
 	
     //This method (defined above) simply searches models of your theory
-	stdoptions.nbmodels=5 //Find 5 models	
-	printmodels(modelexpand(solution,testStruc2))
+	//stdoptions.nbmodels=5 //Find 5 models	
+	//printmodels(modelexpand(solution,verStruc))
 	
 }
