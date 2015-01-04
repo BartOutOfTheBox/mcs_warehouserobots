@@ -33,7 +33,6 @@ LTCvocabulary warehousevoc{
 	inaccessible(location)
 	
 	robotposition(Time): location
-	
 	// Helper predicates
 	I_robotposition(location)		// Initial
 	C_robotposition(Time,location)	// Causes
@@ -321,13 +320,23 @@ theory solution: warehousevoc{
 	
 	{
 		// Expressing causations position(Time,pallet):location
+		// Putting down a pallet is a reason to be in front of the robot
 		! l [location], p [pallet], t [Time] :
 			C_position(t,p,l) <- 
 				execute(t,putDown(p)) &
 				(nextPosition(t) = l).
+		// Picking up a pallet is a reason to be at the same position of the robot.
+		! l [location], p [pallet], t [Time]:
+			C_position(t,p,l) <-
+				execute(t,pickUp(p)) &
+				(robotposition(t) = l).
 				
+		// Picking up a pallet is a reason not to be on the previous pallets place.
 		! l [location], p [pallet], t [Time] :  
 			Cn_position(t,p,l) <- (position(t,p) = l) & execute(t,pickUp(p)).
+		// Putting down a pallet is a reason not to be on the robots place.
+		! l [location], p [pallet], t [Time] :  
+			Cn_position(t,p,l) <- (robotposition(t) = l) & execute(t,putDown(p)).
 	}
 }
 
@@ -381,20 +390,20 @@ structure verStruc:warehousevoc{
 }
 
 structure testStruc2:warehousevoc{
-	Time = {0..3}
+	Time = {0..6}
     Start = 0
-    Next = {0->1;1->2;2->3}
+    Next = {0->1;1->2;2->3;3->4;4->5;5->6} //;6->7}
 	
     xco={1..2}
     yco={1..2}
     height = {0..3}
-    pallet ={p1}
+    pallet ={p1;p2}
     inaccessible={}
-    position<ct>={0,p1->grid(2,1)}
+    position<ct>={0,p1->grid(2,1);0,p2->grid(2,2)}
     robotposition<ct>={0->grid(1,2)}
     facing<ct>={0->south()}
-	execute<ct>={0,moveFront();1,rotateLeft();2,pickUp(p1)}
-	execute<cf> = {3,rotateRight(); 3,rotateLeft(); 3,moveFront(); 3,moveBack(); 3,pickUp(p1); 3,putDown(p1)}
+	execute<ct>={0,moveFront(); 1,rotateLeft(); 2,pickUp(p1); 3,rotateLeft(); 4,moveFront(); 5,rotateRight()}
+	execute<cf> = {6,rotateRight(); 6,rotateLeft(); 6,moveFront(); 6,moveBack(); 6,pickUp(p1); 6,putDown(p1); 6,pickUp(p2); 6,putDown(p2)}
 
     ceiling = 3
 }
@@ -412,12 +421,12 @@ procedure main(){
     //This method walks randomly trough the solutions, 5 steps deep
 	//simulate_random(solution,testStruc2,5)
 	
-	stdoptions.liftedunitpropagation=false
-	stdoptions.groundwithbounds=false
-	printcore(solution,testStruc2)
+	//stdoptions.liftedunitpropagation=false
+	//stdoptions.groundwithbounds=false
+	//printcore(solution,testStruc2)
 	
     //This method (defined above) simply searches models of your theory
-	//stdoptions.nbmodels=5 //Find 5 models	
-	//printmodels(modelexpand(solution,testStruc2))
+	stdoptions.nbmodels=5 //Find 5 models	
+	printmodels(modelexpand(solution,testStruc2))
 	
 }
